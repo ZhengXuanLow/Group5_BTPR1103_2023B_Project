@@ -13,21 +13,27 @@ public class DatabaseManager {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/timberman", "root", "");
+
+            //Create if not exists
             Statement statement = connection.createStatement();
             statement.executeUpdate("CREATE TABLE IF NOT EXISTS `timberman`.`highscore` ( `hTime50` INT NOT NULL , `hTime100` INT NOT NULL , `hTime200` INT NOT NULL , `hScoreEndless` INT NOT NULL )");
 
+            //Successful connect
             main.connectionState = true;
         } catch (Exception exception) {
             System.out.println(exception.getMessage());
+
             File saveFile = new File("save.txt");
-            //1. File Existence Check & File Readability Check:
+            //File Existence Check
             if (saveFile.exists()) {
                 System.out.println("File exists");
                 FileHandling.getHighScoreLocal();
+                //Unsuccessful connect
                 main.connectionState = false;
             }
 
             else {
+                //If not, create a file
                 try {
                     FileOutputStream fileOutputStream = new FileOutputStream("save.txt");
 

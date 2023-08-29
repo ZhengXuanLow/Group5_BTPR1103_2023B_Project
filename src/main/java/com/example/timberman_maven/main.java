@@ -17,32 +17,49 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
+
+import javax.swing.*;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.sql.PreparedStatement;
 import java.util.Random;
+import java.util.Scanner;
 
 
-public class main extends Application {
+public class main extends Application { //Inheritance
 
-    Integer[] innerArray = new Integer[7];
-    protected int resultTime = 0;
-    protected static int hTime50 = 50;
-    protected static int hTime100 = 100;
-    protected static int hTime200 = 200;
-    protected static int hScoreEndless = 0;
-    protected static int currentScore = 0;
-    protected static int targetScore = 50;
-    protected static boolean connectionState = false;
-    boolean gameState = false;
-    long startTime;
+    Integer[] innerArray = new Integer[7]; //Create an Array to store the int
+    protected int resultTime = 0; //Store the play time
+    protected static int hTime50 = 50; //Default high score of target50
+    protected static int hTime100 = 100; //Default high score of target100
+    protected static int hTime200 = 200; //Default high score of target200
+    protected static int hScoreEndless = 0; //Default high score of targetEndLess
+    protected static int currentScore = 0; //Store the current player score
+    protected static int targetScore = 50; //Default target score
+    protected static boolean connectionState = false; //Default connection state, true when connect to database.
+    boolean gameState = false; //Default game state as false, true when the game start
+    long startTime; //Store start time
+
+    //Menu Related
     Menu settingMenu = new Menu("Setting");
     Menu helpMenu = new Menu("Help");
     MenuItem settingMenuItem = new MenuItem("Setting");
+    MenuItem helpMenuItem = new MenuItem("Help");
     MenuBar menuBarTop = new MenuBar();
+
+    //Button
     Button startGameButton = new Button("Start");
     Button backToGameButton = new Button("Back");
     Button deleteButton = new Button("Reset Record");
-    MenuItem helpMenuItem = new MenuItem("Help");
+
+    //Label
     Label titleLabel = new Label("TimberMan " + "\n     Game");
+
+    //Check is the game started, true when the game start
+    boolean gameStarted = false;
+
+    //Image Property
     Image leftTreeImage = new Image(main.class.getResource("left.png").toString());
     Image rightTreeImage = new Image(main.class.getResource("right.png").toString());
     Image noTreeImage = new Image(main.class.getResource("no.png").toString());
@@ -52,12 +69,7 @@ public class main extends Application {
     Image chopRightImage = new Image(main.class.getResource("chopright.png").toString());
     Image deadLeftImage = new Image(main.class.getResource("deadleft.png").toString());
     Image deadRightImage = new Image(main.class.getResource("deadright.png").toString());
-
-    RadioButton target50 = new RadioButton("target 50");
-    RadioButton target100 = new RadioButton("target 100");
-    RadioButton target200 = new RadioButton("target 200");
-    RadioButton targetEndless = new RadioButton("targetEndless");
-
+    Image overlay = new Image(main.class.getResource("overlay.png").toString());
     ImageView playerImageView = new ImageView();
     ImageView index0ImageView = new ImageView();
     ImageView index1ImageView = new ImageView();
@@ -66,11 +78,23 @@ public class main extends Application {
     ImageView index4ImageView = new ImageView();
     ImageView index5ImageView = new ImageView();
     ImageView index6ImageView = new ImageView();
+    ImageView overlayImageView = new ImageView(overlay);
+
+    //RadioButtons
+    RadioButton target50 = new RadioButton("target 50");
+    RadioButton target100 = new RadioButton("target 100");
+    RadioButton target200 = new RadioButton("target 200");
+    RadioButton targetEndless = new RadioButton("targetEndless");
+
+    //Database Related
     DatabaseManager database = new DatabaseManager();
-    boolean gameStarted = false; // Add this variable to track if the game has started
+
+
     Label scoreLabel = new Label("Score: 0");
 
     Rectangle rectangle = new Rectangle(150, 80);
+
+    //Score Display HBox
     HBox centerScore = new HBox();
 
     @Override
@@ -80,54 +104,77 @@ public class main extends Application {
         Scene scene = new Scene(borderPane);
         BorderPane settingBorderPane = new BorderPane();
         Scene settingScene = new Scene(settingBorderPane);
+        //settingBorderPane.setStyle("-fx-background-color: #fede99;");
 
-        if(connectionState == true)
+        //Check if connect to database, get high score from database
+        if(connectionState)
         {
             JDBCMethod.getHighScoreDB();
+            //Ask user to sync data if the high score is different between database and local.
             FileHandling.SyncData();
         } else {
+            //Get high score from local save.txt
             FileHandling.getHighScoreLocal();
         }
 
+        //Set the stage as not resizable
         stage.setResizable(false);
 
+        //random generate number insert to innerArray
         randomStart();
-        imageSet();
-        startTime = System.currentTimeMillis();// Initialize the start time
 
-        stackPane.getChildren().addAll(treeVBox(),centerTitle(),centerScore());
+        //Turn the innerArray into "imageview"
+        imageSet();
+
+        //Initialize the start time
+        startTime = System.currentTimeMillis();
+
+        VBox overlayVBox = new VBox(overlayImageView);
+
+        //Insert the treeVBox, title and score to the stackpane
+        stackPane.getChildren().addAll(treeVBox(),centerScore(),overlayVBox);
+
+        //Set menuBar at the top
         borderPane.setTop(menuBar());
         borderPane.setCenter(stackPane);
+
+        //Insert settingVBox into settingBorderPane
         settingBorderPane.setCenter(settingVBoxMethod());
 
-
+        //Load the scene to have event lister when key pressed
         scene.setOnKeyPressed(event -> handleKeyPressed(event));
         scene.setOnKeyReleased(event -> handleKeyReleased(event));
 
+        //Set Radio Button actions when click
         target50.setOnAction(event -> {
             targetScore = 50; // Set the target score
             resetGame(); // Reset the game
         });
 
+        //Set Radio Button actions when click
         target100.setOnAction(event -> {
             targetScore = 100; // Set the target score
             resetGame(); // Reset the game
         });
 
+        //Set Radio Button actions when click
         target200.setOnAction(event -> {
             targetScore = 200; // Set the target score
             resetGame(); // Reset the game
         });
 
+        //Set Radio Button actions when click
         targetEndless.setOnAction(event -> {
             targetScore = Integer.MAX_VALUE; // Set a very high target score for endless mode
             resetGame(); // Reset the game
         });
 
+        //Set the scene tile
         stage.setTitle("TimberMan");
         stage.setScene(scene);
         stage.show();
 
+        //Button Event
         settingMenuItem.setOnAction(event -> {
             stage.setTitle("Setting");
             stage.setScene(settingScene);
@@ -140,46 +187,43 @@ public class main extends Application {
             stage.show();
         });
 
-        startGameButton.setOnAction(event -> {
-            stage.setTitle("TimberMan");
-            stage.setScene(scene);
-            stage.show();
-        });
-
-        startGameButton.setOnAction(event -> {
-            gameState = true; // Start the game
-            stage.setTitle("TimberMan");
-            stage.setScene(scene);
-            stage.show();
-
-            startGameButton.setVisible(false); // Hide the start button
-            titleLabel.setVisible(false); // Hide the title label
-            rectangle.setVisible(false);
-            centerScore.setVisible(true);
-        });
-
         deleteButton.setOnAction(event ->{
-            if (connectionState == true)
-            {
-                JDBCMethod.resetRecordDB();
+            int choice = JOptionPane.showConfirmDialog(
+                    null,
+                    "Are you sure to reset data?",
+                    "Confirmation",
+                    JOptionPane.YES_NO_OPTION
+            );
+            if (choice == JOptionPane.YES_OPTION) {
+                System.out.println("User chose YES to reset");
+                if (connectionState)
+                {
+                    JDBCMethod.resetRecordDB(); //Reset DB if connect to database
 
+                } else {
+                    FileHandling.resetRecordLocal(); //Reset Local Variable and save.txt
+                }
+            } else if (choice == JOptionPane.NO_OPTION) {
+                System.out.println("User chose NO to reset.");
             } else {
-                FileHandling.resetRecordLocal();
+                System.out.println("User closed the reset dialog.");
             }
 
-        });
 
+
+        });
+        //Button Event End
+
+        //Help Alert Box
         helpMenuItem.setOnAction(e->{
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("Help");
             alert.setContentText("1. Chop the tree by using left and right arrow."
-            +"\n" + "2. Be careful by not being hit by he branch."
-            + "\n" + "3. Good luck have fun.");
+                    +"\n" + "2. Default target is 50, target can be change in setting on the top left corner."
+            +"\n" + "3. Be careful by not being hit by he branch."
+            + "\n" + "4. Good luck have fun.");
             alert.showAndWait();
         });
-
-
-
 
     }
 
@@ -188,16 +232,25 @@ public class main extends Application {
     }
 
     private void handleKeyPressed(KeyEvent event) {
+        //Get keyPressed
         String keyPressed = event.getCode().toString();
-        if (!gameStarted) {
-            startTime = System.currentTimeMillis();
-            gameStarted = true;
-        }
+
+        //Set startTime and turn gameStared to true if the gameStarted = false
         if (keyPressed == "LEFT") {
-            playerImageView.setImage(chopLeftImage);
+            playerImageView.setImage(chopLeftImage); //When press change image in the playerImageView
+            if (!gameStarted) {
+                startTime = System.currentTimeMillis();
+                overlayImageView.setVisible(false);
+                gameStarted = true;
+            }
 
         } else if (keyPressed == "RIGHT") {
-            playerImageView.setImage(chopRightImage);
+            playerImageView.setImage(chopRightImage); //When press change image in the playerImageView
+            if (!gameStarted) {
+                startTime = System.currentTimeMillis();
+                overlayImageView.setVisible(false);
+                gameStarted = true;
+            }
         }
 
     }
@@ -205,17 +258,22 @@ public class main extends Application {
     private void handleKeyReleased(KeyEvent event) {
         String keyPressed = event.getCode().toString();
         if (keyPressed == "LEFT") {
+            //Validate the score
             if (currentScore >= targetScore-1) {
                 long endTime = System.currentTimeMillis();
+                //Calculate the time used to complete the game
                 String timeString = calculateElapsedTime(startTime, endTime);
-                if (connectionState == true)
+
+                //Set and get highscore depend on the connectionState
+                if (connectionState)
                 {
                     JDBCMethod.setHighScoreDB(resultTime);
                     JDBCMethod.getHighScoreDB();
-                } else if (connectionState == false) {
+                } else if (!connectionState) {
                     FileHandling.setHighScoreLocal(resultTime);
                 }
 
+                //Alert Box(Complete)
                 Alert congratsAlert = new Alert(Alert.AlertType.INFORMATION);
                 congratsAlert.setTitle("Congratulations!");
                 congratsAlert.setContentText("You reached the target score of " + targetScore + "!\nTime: " + timeString +"\n\n"+ "High Score"+"\n"+"Target 50: " + hTime50+" seconds"
@@ -223,14 +281,19 @@ public class main extends Application {
                         +"\nTarget 200: " + hTime200+" seconds"
                         +"\nEndless: " + hScoreEndless+" score");
                 congratsAlert.showAndWait();
+
+                //Reset the game and variable
                 resetGame();
             } else {
                 if (innerArray[0] == 1) {
-                    randomArrayAction();
+                    randomArrayAction(); //Queue, Push
                     imageSet();
+                    //Show the player dead
                     playerImageView.setImage(deadLeftImage);
                     long endTime = System.currentTimeMillis();
+                    //Calculate the time used to complete the game
                     String timeString = calculateElapsedTime(startTime, endTime);
+                    //Set and get highscore depend on the connectionState
                     if (targetScore != 50 && targetScore != 100 && targetScore != 200) {
                         if (connectionState == true)
                         {
@@ -240,34 +303,39 @@ public class main extends Application {
                             FileHandling.setHighScoreLocal(resultTime);
                         }
                     }
+                    //Alert Box (Lose)
                     Alert alert = new Alert(Alert.AlertType.WARNING);
                     alert.setTitle("You Lose!");
                     alert.setContentText("Score: " + currentScore + "\nTime: " + timeString +"\n\n"+ "High Score"+"\n"+"Target 50: " + hTime50+" seconds"
                             +"\nTarget 100: " + hTime100+" seconds"
                             +"\nTarget 200: " + hTime200+" seconds"
                             +"\nEndless: " + hScoreEndless+" score");
-
                     alert.showAndWait();
+                    //Reset the game and variable
                     resetGame();
                 } else {
-                    playerImageView.setImage(standRightImage);
-                    randomArrayAction();
+                    playerImageView.setImage(standRightImage); //set the image of playerImageView
+                    randomArrayAction(); //Queue, Push
                     imageSet();
-                    currentScore++;
+                    currentScore++; //+score
                     scoreLabel.setText(Integer.toString(currentScore)); // Update the scoreLabel
                 }
             }
         } else if (keyPressed == "RIGHT") {
             if (currentScore >= targetScore-1) {
                 long endTime = System.currentTimeMillis();
+                //Calculate the time used to complete the game
                 String timeString = calculateElapsedTime(startTime, endTime);
-                if (connectionState == true)
+                //Set and get highscore depend on the connectionState
+                if (connectionState)
                 {
                     JDBCMethod.setHighScoreDB(resultTime);
                     JDBCMethod.getHighScoreDB();
-                } else if (connectionState == false) {
+                } else if (!connectionState) {
                     FileHandling.setHighScoreLocal(resultTime);
                 }
+
+                //Alert Box
                 Alert congratsAlert = new Alert(Alert.AlertType.INFORMATION);
                 congratsAlert.setTitle("Congratulations!");
                 congratsAlert.setContentText("You reached the target score of " + targetScore + "!\nTime: " + timeString +"\n\n"+ "High Score"+"\n"+"Target 50: " + hTime50+" seconds"
@@ -275,15 +343,19 @@ public class main extends Application {
                         +"\nTarget 200: " + hTime200+" seconds"
                         +"\nEndless: " + hScoreEndless+" score");
                 congratsAlert.showAndWait();
+
+                //Reset the game and variable
                 resetGame();
             } else {
                 if (innerArray[0] == 2) {
                     randomArrayAction();
                     playerImageView.setImage(deadRightImage);
                     long endTime = System.currentTimeMillis();
+
+                    //Calculate the time used to complete the game
                     String timeString = calculateElapsedTime(startTime, endTime);
 
-
+                    //Set and get highscore depend on the connectionState
                     if (targetScore != 50 && targetScore != 100 && targetScore != 200) {
                         if (connectionState)
                         {
@@ -300,6 +372,7 @@ public class main extends Application {
                             +"\nTarget 200: " + hTime200+" seconds"
                             +"\nEndless: " + hScoreEndless+" score");
                     alert.showAndWait();
+                    //Reset the game and variable
                     resetGame();
                 }else {
                     playerImageView.setImage(standLeftImage);
@@ -324,7 +397,7 @@ public class main extends Application {
                 // Generate random number between 0, 1 and 2 (inclusive)
                 innerArray[i] = random.nextInt(3);
             }
-        } catch (Exception e) { //这里！！//这里！！//这里！！//这里！！
+        } catch (Exception e) {
             e.printStackTrace(); // Print the stack trace for debugging purposes
 
             // Display an alert to inform the user about the issue
@@ -342,7 +415,7 @@ public class main extends Application {
         return treeVBox;
     }
     
-    public void imageSet() {
+    public void imageSet() { //1 = left, 2 = right
         if (innerArray[0] == 1) {
             index0ImageView.setImage(leftTreeImage);
         } else if (innerArray[0] == 2) {
@@ -388,7 +461,7 @@ public class main extends Application {
     }
 
 
-    private void randomArrayAction() {
+    private void randomArrayAction() { //Queue,Push
         for (int i = 1; i < innerArray.length; i++) {
             innerArray[i - 1] = innerArray[i];
         }
@@ -413,6 +486,7 @@ public class main extends Application {
         targetEndless.setPadding(new Insets(10));
         backToGameButton.setPadding(new Insets(10));
         deleteButton.setPadding(new Insets(10));
+        deleteButton.setStyle("-fx-background-color: red; -fx-text-fill: white;");
 
         VBox settingVBox = new VBox(backToGameButton, target50,target100,target200,targetEndless,deleteButton);
 
@@ -421,13 +495,14 @@ public class main extends Application {
 
     private void resetGame() {
         try {
-            gameStarted = false; // Reset gameStarted to false    //这里！！//这里！！//这里！！
+            gameStarted = false; // Reset gameStarted to false
             currentScore = 0; // Reset the current score
             randomStart(); // Reset the game state
             imageSet(); // Update the images
             playerImageView.setImage(standRightImage); // Set the player image
             scoreLabel.setText(Integer.toString(currentScore)); // Update the scoreLabel
-        } catch (Exception e) {  //这里！！//这里！！//这里！！//这里！！
+            overlayImageView.setVisible(true);
+        } catch (Exception e) {
             e.printStackTrace(); // Print the stack trace for debugging purposes
 
             // Display an alert to inform the user about the issue
@@ -439,6 +514,8 @@ public class main extends Application {
         }
     }
 
+
+    //Calculate the time
     private String calculateElapsedTime(long startTime, long endTime) {
         long elapsedTimeInMillis = endTime - startTime;
         long elapsedTimeInSeconds = elapsedTimeInMillis / 1000;
@@ -456,6 +533,7 @@ public class main extends Application {
         return timeString;
     }
 
+    //centerScore HBox
     public HBox centerScore(){
         // Set the score label text
         scoreLabel.setText(Integer.toString(currentScore));
@@ -471,15 +549,7 @@ public class main extends Application {
         return centerScore;
     }
 
-    public VBox centerTitle(){
-
-        VBox centerTitle = new VBox();
-        centerTitle.setAlignment(Pos.CENTER);
-        centerTitle.setPadding(new Insets(10));
-
-        return centerTitle;
-    }
-
+    //MenuBar
     public MenuBar menuBar()
     {
         Image iconImage1 = new Image(main.class.getResource("help.png").toString());

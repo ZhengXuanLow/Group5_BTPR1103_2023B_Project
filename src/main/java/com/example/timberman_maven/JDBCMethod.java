@@ -11,6 +11,8 @@ import static com.example.timberman_maven.main.*;
 public class JDBCMethod {
 
     static DatabaseManager database = new DatabaseManager();
+
+    //Get High Score from DB
     protected static void getHighScoreDB()
     {
             try {
@@ -29,6 +31,7 @@ public class JDBCMethod {
 
     }
 
+    //Set High Score from DB
     protected static void setHighScoreDB(int timeInt)
     {
 
@@ -82,6 +85,8 @@ public class JDBCMethod {
 
     }
 
+
+    //Reset from DB
     protected static void resetRecordDB()
     {
         try
@@ -92,6 +97,7 @@ public class JDBCMethod {
             alert .setTitle("Success");
             alert .setContentText("Record reset");
             alert .showAndWait();
+            //Get again to redefine the value
             getHighScoreDB();
         }
         catch(Exception e){
