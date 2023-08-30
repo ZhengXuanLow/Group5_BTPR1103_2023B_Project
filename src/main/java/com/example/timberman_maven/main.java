@@ -38,7 +38,6 @@ public class main extends Application { //Inheritance
     protected static int currentScore = 0; //Store the current player score
     protected static int targetScore = 50; //Default target score
     protected static boolean connectionState = false; //Default connection state, true when connect to database.
-    boolean gameState = false; //Default game state as false, true when the game start
     long startTime; //Store start time
 
     //Menu Related
@@ -49,12 +48,8 @@ public class main extends Application { //Inheritance
     MenuBar menuBarTop = new MenuBar();
 
     //Button
-    Button startGameButton = new Button("Start");
     Button backToGameButton = new Button("Back");
     Button deleteButton = new Button("Reset Record");
-
-    //Label
-    Label titleLabel = new Label("TimberMan " + "\n     Game");
 
     //Check is the game started, true when the game start
     boolean gameStarted = false;
@@ -70,6 +65,7 @@ public class main extends Application { //Inheritance
     Image deadLeftImage = new Image(main.class.getResource("deadleft.png").toString());
     Image deadRightImage = new Image(main.class.getResource("deadright.png").toString());
     Image overlay = new Image(main.class.getResource("overlay.png").toString());
+    Image icon = new Image(main.class.getResource("icon.png").toString());
     ImageView playerImageView = new ImageView();
     ImageView index0ImageView = new ImageView();
     ImageView index1ImageView = new ImageView();
@@ -105,6 +101,9 @@ public class main extends Application { //Inheritance
         BorderPane settingBorderPane = new BorderPane();
         Scene settingScene = new Scene(settingBorderPane);
         //settingBorderPane.setStyle("-fx-background-color: #fede99;");
+
+        //Set the appIcon
+        stage.getIcons().add(icon);
 
         //Check if connect to database, get high score from database
         if(connectionState)
@@ -261,6 +260,7 @@ public class main extends Application { //Inheritance
             //Validate the score
             if (currentScore >= targetScore-1) {
                 long endTime = System.currentTimeMillis();
+                scoreLabel.setText(Integer.toString(currentScore+1));
                 //Calculate the time used to complete the game
                 String timeString = calculateElapsedTime(startTime, endTime);
 
@@ -323,6 +323,7 @@ public class main extends Application { //Inheritance
             }
         } else if (keyPressed == "RIGHT") {
             if (currentScore >= targetScore-1) {
+                scoreLabel.setText(Integer.toString(currentScore+1));
                 long endTime = System.currentTimeMillis();
                 //Calculate the time used to complete the game
                 String timeString = calculateElapsedTime(startTime, endTime);
